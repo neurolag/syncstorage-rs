@@ -18,8 +18,11 @@ static PREFIX: &str = "sync";
 pub struct Settings {
     pub port: u16,
     pub host: String,
-    /// public facing URL of the server
+    /// The private address of the server.
+    pub server_address: ServerAddress,
     pub public_url: Option<String>,
+    /// The public facing server address.
+    pub public_address: Option<ServerAddress>,
     /// Keep-alive header value (seconds)
     pub actix_keep_alive: Option<u32>,
     /// The master secret, from which are derived
@@ -187,7 +190,13 @@ impl Default for Settings {
         Settings {
             port: 8000,
             host: "127.0.0.1".to_string(),
+            server_address: ServerAddress::Parts {
+                host: "127.0.0.1".to_string(),
+                port: 8000,
+                path: None,
+            },
             public_url: None,
+            public_address: None,
             actix_keep_alive: None,
             master_secret: Secrets::default(),
             statsd_host: Some("localhost".to_owned()),
@@ -225,6 +234,37 @@ impl Default for Settings {
             worker_max_blocking_threads: 512,
             syncstorage: SyncstorageSettings::default(),
             tokenserver: TokenserverSettings::default(),
+        }
+    }
+}
+
+/// Represents a server address.
+#[derive(Clone, Debug, Deserialize)]
+pub enum ServerAddress {
+    /// The uri to the server.
+    Url(String),
+    /// The parts of the address.
+    Parts {
+        /// The host name of the server.
+        host: String,
+        /// The port of the server.
+        port: u16,
+        /// The path to the root of the service.
+        path: Option<String>,
+    },
+}
+
+impl ServerAddress {
+    pub fn get_path(&self) -> String {
+        match self {
+            ServerAddress::Parts {
+                path: Some(ref path),
+                ..
+            } => path.to_owned(),
+            ServerAddress::Url(ref url) => {
+                Url::parse(url).map(|url| url.path().to_owned()).unwrap()
+            }
+            _ => "".to_owned(),
         }
     }
 }

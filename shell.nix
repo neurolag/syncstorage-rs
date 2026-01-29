@@ -3,7 +3,7 @@
 # This file is intended to be used with `nix-shell`
 # (https://nixos.org/nix/manual/#sec-nix-shell) to setup a fully-functional
 # syncstorage-rs build environment by installing all required dependencies.
-with import <nixpkgs> {};
+with import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/dc402c1fc646b5aeb6e50bdd06e1509981ce2af0.tar.gz") {};
 stdenv.mkDerivation {
   name = "syncstorage-rs";
   buildInputs = [
@@ -14,7 +14,9 @@ stdenv.mkDerivation {
     openssl
     cmake
     protobuf
+    python313
     go
   ];
   NIX_LDFLAGS = "-L${libmysqlclient}/lib/mysql";
+  RUST_SRC_PATH = "${rustPlatform.rustLibSrc}";
 }

@@ -19,7 +19,7 @@ use syncserver_common::{
     Taggable,
 };
 use syncserver_db_common::{GetPoolState, PoolState};
-use syncserver_settings::Settings;
+use syncserver_settings::{Settings, ServerAddress};
 use syncstorage_db::{DbError, DbPool, DbPoolImpl};
 use syncstorage_settings::{Deadman, ServerLimits};
 use tokio::{sync::RwLock, time};
@@ -108,7 +108,7 @@ pub struct Server;
 
 #[macro_export]
 macro_rules! build_app {
-    ($reverse_proxy_state: expr, $syncstorage_state: expr, $tokenserver_state: expr, $secrets: expr, $limits: expr, $cors: expr, $metrics: expr) => {
+    ($server_address: expr, $public_address: expr, $syncstorage_state: expr, $tokenserver_state: expr, $secrets: expr, $limits: expr, $cors: expr, $metrics: expr) => {
         App::new()
             .configure(|cfg| {
                 cfg.app_data(Data::new($syncstorage_state));
@@ -119,7 +119,7 @@ macro_rules! build_app {
                 }
             })
             .app_data(Data::new($secrets))
-            .app_data(Data::new($reverse_proxy_state))
+            .app_data(Data::new($public_address))
             // Middleware is applied LIFO
             // These will wrap all outbound responses with matching status codes.
             .wrap(ErrorHandlers::new().handler(StatusCode::NOT_FOUND, ApiError::render_404))
@@ -184,7 +184,7 @@ macro_rules! build_app {
             )
             // Tokenserver
             .service(
-                web::resource("/1.0/{application}/{version}")
+                web::resource(format!("{}1.0/{}", $server_address.path(), "{application}/{version}"))
                     .route(web::get().to(tokenserver::handlers::get_tokenserver_result)),
             )
             // Dockerflow
@@ -370,6 +370,7 @@ impl Server {
 
             build_app!(
                 ReverseProxyState::from_settings(&settings_copy),
+                &settings_copy.public_address.clone(),
                 syncstorage_state,
                 tokenserver_state.clone(),
                 Arc::clone(&secrets),

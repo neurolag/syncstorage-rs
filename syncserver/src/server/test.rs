@@ -133,7 +133,8 @@ macro_rules! init_app {
             let state = get_test_state(&$settings).await;
             let metrics = state.metrics.clone();
             test::init_service(build_app!(
-                ReverseProxyState::from_settings(&$settings),
+                &$settings.server_address,
+                &$settings.public_address,
                 state,
                 None::<tokenserver::ServerState>,
                 Arc::clone(&SECRETS),
@@ -275,7 +276,8 @@ where
     let state = get_test_state(&settings).await;
     let metrics = state.metrics.clone();
     let app = test::init_service(build_app!(
-        ReverseProxyState::from_settings(&settings),
+        &settings.server_address,
+        &settings.public_address,
         state,
         None::<tokenserver::ServerState>,
         Arc::clone(&SECRETS),
@@ -320,7 +322,8 @@ async fn test_endpoint_with_body(
     let state = get_test_state(&settings).await;
     let metrics = state.metrics.clone();
     let app = test::init_service(build_app!(
-        ReverseProxyState::from_settings(&settings),
+        &settings.server_address,
+        &settings.public_address,
         state,
         None::<tokenserver::ServerState>,
         Arc::clone(&SECRETS),
